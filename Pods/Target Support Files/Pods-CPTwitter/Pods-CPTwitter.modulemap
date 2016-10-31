@@ -1,0 +1,6 @@
+framework module Pods_CPTwitter {
+  umbrella header "Pods-CPTwitter-umbrella.h"
+
+  export *
+  module * { export * }
+}

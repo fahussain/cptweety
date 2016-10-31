@@ -7,15 +7,30 @@
 //
 
 import UIKit
+import BDBOAuth1Manager
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
+    let consumerKey: String = "eDZFxmmLWwemFqdVz0i11sjIN"
+    let consumerSecret: String = "0Z9sTym2iYjTKdMmStr39wIPsHcGyEBzsURiUvWgGBCeDKuZIP"
     var window: UIWindow?
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        if User.current != nil {
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+            let tweetsViewController = storyboard.instantiateViewController(withIdentifier: "TweetsNavigationController")
+            window?.rootViewController = tweetsViewController
+        }
+        NotificationCenter.default.addObserver(forName: TwitterClient.userDidLogoutNotification, object: nil, queue: OperationQueue.main) { (notification: Notification) in
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+            let loginViewController = storyboard.instantiateInitialViewController()
+            self.window?.rootViewController = loginViewController
+
+        }
         return true
     }
 
@@ -40,7 +55,112 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
+    func application(_ app: UIApplication, open url: URL, options: [UIApplicationOpenURLOptionsKey : Any] = [:]) -> Bool {
 
+        TwitterClient.shared?.handleOpenUrl(url: url)
+        return true
+    }
 
 }
 
+extension DateFormatter {
+    /**
+     Formats a date as the time since that date (e.g., “Last week, yesterday, etc.”).
+     
+     - Parameter from: The date to process.
+     - Parameter numericDates: Determines if we should return a numeric variant, e.g. "1 month ago" vs. "Last month".
+     
+     - Returns: A string with formatted `date`.
+     */
+    func timeSince(from: Date, numericDates: Bool = false) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let earliest = from //(now > from ? from : now)
+        let latest = now //earliest == now as Date ? from : now
+        let components = calendar.dateComponents([.year, .weekOfYear, .month, .day, .hour, .minute, .second], from: earliest, to: latest)
+        
+        var result = ""
+        
+        if components.year! >= 2 {
+            result = "\(components.year!)y"
+        } else if components.year! >= 1 {
+            if numericDates {
+                result = "1y"
+            } else {
+                result = "Last year"
+            }
+        } else if components.month! >= 2 {
+            result = "\(components.month!)m"
+        } else if components.month! >= 1 {
+            if numericDates {
+                result = "1m"
+            } else {
+                result = "Last month"
+            }
+        } else if components.weekOfYear! >= 2 {
+            result = "\(components.weekOfYear!)w"
+        } else if components.weekOfYear! >= 1 {
+            if numericDates {
+                result = "1w"
+            } else {
+                result = "Last week"
+            }
+        } else if components.day! >= 2 {
+            result = "\(components.day!)d"
+        } else if components.day! >= 1 {
+            if numericDates {
+                result = "1d"
+            } else {
+                result = "Yesterday"
+            }
+        } else if components.hour! >= 2 {
+            result = "\(components.hour!)d"
+        } else if components.hour! >= 1 {
+            if numericDates {
+                result = "1h"
+            } else {
+                result = "An hour ago"
+            }
+        } else if components.minute! >= 2 {
+            result = "\(components.minute!)m"
+        } else if components.minute! >= 1 {
+            if numericDates {
+                result = "1m"
+            } else {
+                result = "A minute ago"
+            }
+        } else if components.second! >= 3 {
+            result = "\(components.second!)s"
+        } else {
+            result = "Just now"
+        }
+        
+        return result
+    }
+}
+
+extension UIColor {
+    convenience init(red: Int, green: Int, blue: Int) {
+        assert(red >= 0 && red <= 255, "Invalid red component")
+        assert(green >= 0 && green <= 255, "Invalid green component")
+        assert(blue >= 0 && blue <= 255, "Invalid blue component")
+        
+        self.init(red: CGFloat(red) / 255.0, green: CGFloat(green) / 255.0, blue: CGFloat(blue) / 255.0, alpha: 1.0)
+    }
+    
+    convenience init(netHex:Int) {
+        self.init(red:(netHex >> 16) & 0xff, green:(netHex >> 8) & 0xff, blue:netHex & 0xff)
+    }
+}
+
+extension String {
+    func add(number: Int) -> String? {
+        if let b = Int(self) {
+            let newValue = b + number
+            return "\(newValue)"
+        }
+        else {
+            return nil
+        }
+    }
+}
